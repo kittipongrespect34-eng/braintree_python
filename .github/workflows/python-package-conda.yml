@@ -28,15 +28,6 @@ jobs:
         auto-activate-base: false
         activate-environment: braintree
     
-    - name: Cache Conda packages
-      uses: actions/cache@v3
-      with:
-        path: ~/miniconda3/pkgs
-        key: ${{ runner.os }}-conda-${{ matrix.python-version }}-${{ hashFiles('environment.yml') }}
-        restore-keys: |
-          ${{ runner.os }}-conda-${{ matrix.python-version }}-
-          ${{ runner.os }}-conda-
-    
     - name: Install dependencies
       shell: bash -l {0}
       run: |
