@@ -40,6 +40,62 @@ jobs:
         echo "✅ Dependencies installed successfully"
         conda list
     
+    - name: Install and verify bandit
+      shell: bash -l {0}
+      run: |
+        echo "Installing bandit for security scanning..."
+        conda install -c conda-forge bandit -y
+        if [ $? -ne 0 ]; then
+          echo "❌ Failed to install bandit"
+          exit 1
+        fi
+        bandit --version
+        if [ $? -ne 0 ]; then
+          echo "❌ bandit verification failed"
+          exit 1
+        fi
+        echo "✅ bandit installed and verified"
+    
+    - name: Security check with bandit
+      shell: bash -l {0}
+      run: |
+        echo "Running bandit security scan..."
+        bandit -r . -f json -o bandit-report.json
+        bandit -r . -f txt
+        if [ $? -ne 0 ]; then
+          echo "⚠️ Security issues detected (see report above)"
+        else
+          echo "✅ No security issues found"
+        fi
+    
+    - name: Install and verify safety
+      shell: bash -l {0}
+      run: |
+        echo "Installing safety for dependency vulnerability scanning..."
+        pip install safety
+        if [ $? -ne 0 ]; then
+          echo "❌ Failed to install safety"
+          exit 1
+        fi
+        safety --version
+        if [ $? -ne 0 ]; then
+          echo "❌ safety verification failed"
+          exit 1
+        fi
+        echo "✅ safety installed and verified"
+    
+    - name: Dependency vulnerability check with safety
+      shell: bash -l {0}
+      run: |
+        echo "Running safety dependency vulnerability scan..."
+        safety check --json > safety-report.json || true
+        safety check
+        if [ $? -ne 0 ]; then
+          echo "⚠️ Vulnerable dependencies detected (see report above)"
+        else
+          echo "✅ No vulnerable dependencies found"
+        fi
+    
     - name: Install and verify flake8
       shell: bash -l {0}
       run: |
@@ -109,3 +165,13 @@ jobs:
         name: codecov-umbrella-${{ matrix.python-version }}
         fail_ci_if_error: false
         verbose: true
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports-py${{ matrix.python-version }}
+        path: |
+          bandit-report.json
+          safety-report.json
+        retention-days: 30
